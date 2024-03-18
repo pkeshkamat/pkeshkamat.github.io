@@ -1,19 +1,5 @@
 <script>
-function showAlert() {
-    alert(1);
+while(true){
+    alert(1)
 }
-
-function showNextAlert() {
-    alert(1);
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    showAlert(); // Show the first alert when the page is loaded
-
-    // Add event listener to the document body for click events
-    document.body.addEventListener('click', function() {
-        // Show the next alert when any click event occurs on the page
-        showNextAlert();
-    }, { once: false }); // Trigger the event listener only once
-});
 </script>
