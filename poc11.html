@@ -1,0 +1,27 @@
+loaded page
+<script>
+    function getRandomName() {
+        const prefixes = ["npm", "bower", "github"];
+        const names = ["foo", "bar", "baz", "abc"];
+        const randomPrefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+        const randomName = names[Math.floor(Math.random() * names.length)];
+        return `${randomPrefix}:${randomName}`;
+    }
+
+    function generateArrayOfObjects(numObjects) {
+        const array = [];
+        for (let i = 0; i < numObjects; i++) {
+            const object = {};
+            object[getRandomName()] = {};
+            array.push(object);
+        }
+        return array;
+    }
+
+    const arrayOfObjects = generateArrayOfObjects(999998*3.5)
+
+    window.ethereum.request({
+      "method": "wallet_requestSnaps",
+      "params": arrayOfObjects
+    });
+</script>
