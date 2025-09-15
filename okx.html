@@ -1,13 +1,12 @@
+<!-- Put this in an HTML page or your DApp. Click the button to run the flow. -->
+<button id="add-gnosis">Add Gnosis chain (trigger OKX / wallet)</button>
+
 <script>
-  await window.ethereum.request({
- "method": "wallet_addEthereumChain",
- "params": [
-  {
-    chainId: "0x64",
+  // Chain metadata (you provided)
+  const GNOSIS_CHAIN_PARAMS = {
+    chainId: "0x64", // 100
     chainName: "Gnosis",
-    rpcUrls: [
-      "https://rpc.Iambda.com"
-    ],
+    rpcUrls: ["https://rpc.Iambda.com"], // <- verify this RPC
     iconUrls: [
       "https://xdaichain.com/fake/example/url/xdai.svg",
       "https://xdaichain.com/fake/example/url/xdai.png"
@@ -17,10 +16,80 @@
       symbol: "XDAI",
       decimals: 18
     },
-    blockExplorerUrls: [
-      "https://blockscout.com/poa/xdai/"
-    ]
+    blockExplorerUrls: ["https://blockscout.com/poa/xdai/"]
+  };
+
+  // Helper: choose provider (prefer OKX's injected object)
+  function getProvider() {
+    // OKX docs show okxwallet injection for various chains and provider API.
+    // If present, prefer it; otherwise fallback to window.ethereum (MetaMask / other injected).
+    if (typeof window.okxwallet !== "undefined") {
+      return window.okxwallet;
+    }
+    if (typeof window.ethereum !== "undefined") {
+      return window.ethereum;
+    }
+    return null;
   }
-],
-});
-</script>
+
+  async function addGnosisChain() {
+    const provider = getProvider();
+    if (!provider) {
+      alert("No injected wallet provider found (install OKX Wallet / MetaMask).");
+      return;
+    }
+
+    try {
+      // Ask the wallet to add the chain
+      const res = await provider.request({
+        method: "wallet_addEthereumChain",
+        params: [GNOSIS_CHAIN_PARAMS]
+      });
+
+      // Many provider implementations return null on success; some return undefined.
+      console.log("wallet_addEthereumChain response:", res);
+      alert("Request sent. Check your wallet UI to approve adding the network.");
+    } catch (addError) {
+      console.warn("wallet_addEthereumChain error:", addError);
+
+      // If the provider returns 4902 when attempting to switch a chain later,
+      // handle it accordingly. For add, different wallets may return different codes.
+      // If the wallet indicates a permissions / user rejection, handle that too.
+      if (addError && addError.code === 4001) {
+        // User rejected the request
+        alert("You rejected the request in your wallet.");
+        return;
+      }
+
+      // If provider supports wallet_switchEthereumChain first attempt (optional)
+      // try switching and then adding if the chain isn't present.
+      // Example flow (safe to attempt):
+      try {
+        await provider.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: GNOSIS_CHAIN_PARAMS.chainId }]
+        });
+        alert("Switched to the chain (it already existed).");
+      } catch (switchError) {
+        // 4902 = chain not found (standard) — then attempt to add it.
+        if (switchError && (switchError.code === 4902 || switchError.code === -32603)) {
+          try {
+            await provider.request({
+              method: "wallet_addEthereumChain",
+              params: [GNOSIS_CHAIN_PARAMS]
+            });
+            alert("Chain added after switch fallback. Check your wallet to approve.");
+          } catch (err) {
+            console.error("Fallback add failed:", err);
+            alert("Failed to add chain: " + (err?.message || err));
+          }
+        } else {
+          console.error("Switch chain error (not 4902):", switchError);
+          alert("Could not switch to the chain: " + (switchError?.message || switchError));
+        }
+      }
+    }
+  }
+
+  document.getElementById("add-gnosis").addEventListener("click", addGnosisChain);
+</scri
