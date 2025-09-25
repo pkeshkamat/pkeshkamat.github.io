@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Add TST token to OKX Wallet (Sepolia)</title>
+  <style>
+    /* Minimal modern styling */
+    :root {
+      --bg: #0b0b0b;
+      --card: #0f0f10;
+      --accent: #ffffff;
+      --muted: #9b9b9b;
+      --success: #16a34a;
+    }
+    html,body { height:100%; margin:0; background:var(--bg); color:var(--accent); font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial; }
+    .wrap { min-height:100%; display:flex; align-items:center; justify-content:center; padding:24px; box-sizing:border-box; }
+    .card { width:100%; max-width:680px; background:linear-gradient(180deg,#0f0f10,#0b0b0b); border-radius:14px; padding:28px; box-shadow: 0 8px 30px rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.03); }
+    h1 { margin:0 0 6px 0; font-size:20px; }
+    p { margin:6px 0 18px 0; color:var(--muted); }
+    .token {
+      display:flex; gap:12px; align-items:center; margin-bottom:20px;
+    }
+    .token .logo {
+      width:56px; height:56px; border-radius:10px; background:linear-gradient(120deg,#ff8a00,#ff3d00); display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff;
+    }
+    .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+    .meta { color:var(--muted); font-size:14px; }
+    .btn {
+      display:inline-block; padding:12px 22px; font-size:16px; border-radius:999px; cursor:pointer; border: none;
+      background: linear-gradient(90deg,#fff,#f2f2f2); color:#000; box-shadow:0 6px 18px rgba(0,0,0,0.5);
+    }
+    .btn:active { transform:translateY(1px); }
+    .small { font-size:13px; color:var(--muted); margin-top:12px; }
+    .status { margin-top:14px; color:var(--muted); }
+    .ok { color:var(--success); }
+    pre { background:#070707; padding:12px; border-radius:8px; color:var(--muted); overflow:auto; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card" role="main">
+      <h1>Add TST token to OKX Wallet (Sepolia)</h1>
+      <p>Click the button to request the wallet add-token prompt. The page will attempt to switch to Sepolia first.</p>
+
+      <div class="token">
+        <div class="logo">TST</div>
+        <div>
+          <div style="font-weight:600">TST</div>
+          <div class="meta">Sepolia • ERC-20 token</div>
+        </div>
+      </div>
+
+      <div class="row" style="margin-bottom:18px;">
+        <div style="flex:1">
+          <div class="meta">Contract address</div>
+          <pre id="address">0xb4824b9361021070c6d67a56986f8574345e47ba</pre>
+        </div>
+        <div style="width:180px">
+          <div class="meta">Decimals</div>
+          <pre id="decimals">4</pre>
+        </div>
+      </div>
+
+      <button id="addBtn" class="btn">Request Add Token in Wallet</button>
+
+      <div class="status" id="status">Status: idle</div>
+      <div class="small">Notes: This uses the standard `wallet_watchAsset` JSON-RPC method supported by MetaMask-compatible wallets (OKX Wallet usually supports this). If the wallet is not installed or the user rejects, you'll see an error.</div>
+    </div>
+  </div>
+
+  <script>
+    // Token details from your screenshot
+    const TOKEN = {
+      address: '0xb4824b9361021070c6d67a56986f8574345e47ba',
+      symbol: 'TST',
+      decimals: 4,
+      // If you have a hosted token image, put its URL here, otherwise omit or leave blank.
+      image: '' // optional: 'https://your.cdn/path/tst.png'
+    };
+
+    // Sepolia chainId (hex)
+    const SEPOLIA_CHAIN_ID = '0xaa36a7'; // 11155111
+
+    const statusEl = document.getElementById('status');
+    const btn = document.getElementById('addBtn');
+
+    function setStatus(text, ok=false) {
+      statusEl.textContent = 'Status: ' + text;
+      statusEl.className = ok ? 'status ok' : 'status';
+    }
+
+    async function detectProvider() {
+      // prefer explicit okxwallet global if available, otherwise use window.ethereum
+      if (window.okxwallet) return window.okxwallet;
+      if (window.ethereum) return window.ethereum;
+      return null;
+    }
+
+    async function switchToSepolia(provider) {
+      try {
+        await provider.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: SEPOLIA_CHAIN_ID }]
+        });
+        return { switched: true };
+      } catch (err) {
+        // If the chain is not added (error code 4902), attempt to add it
+        if (err && (err.code === 4902 || (err.message && err.message.toLowerCase().includes('unrecognized chain')))) {
+          try {
+            await provider.request({
+              method: 'wallet_addEthereumChain',
+              params: [{
+                chainId: SEPOLIA_CHAIN_ID,
+                chainName: 'Sepolia Testnet',
+                rpcUrls: ['https://rpc.sepolia.org/'], // generic public RPC; you may replace with your RPC
+                nativeCurrency: { name: 'Sepolia Ether', symbol: 'ETH', decimals: 18 },
+                blockExplorerUrls: ['https://sepolia.etherscan.io']
+              }]
+            });
+            // After adding, try switching again (some wallets automatically switch)
+            await provider.request({
+              method: 'wallet_switchEthereumChain',
+              params: [{ chainId: SEPOLIA_CHAIN_ID }]
+            });
+            return { switched: true, added: true };
+          } catch (addErr) {
+            console.error('Failed to add Sepolia chain:', addErr);
+            return { error: addErr };
+          }
+        }
+        // some other error while switching
+        console.warn('Switch chain error', err);
+        return { error: err };
+      }
+    }
+
+    async function requestAddToken(provider) {
+      // Build params for wallet_watchAsset
+      const params = {
+        type: 'ERC20',
+        options: {
+          address: TOKEN.address,
+          symbol: TOKEN.symbol,
+          decimals: TOKEN.decimals,
+        }
+      };
+      if (TOKEN.image) params.options.image = TOKEN.image;
+
+      // wallet_watchAsset returns boolean (true if accepted)
+      const wasAdded = await provider.request({
+        method: 'wallet_watchAsset',
+        params: params
+      });
+
+      return wasAdded === true;
+    }
+
+    btn.addEventListener('click', async () => {
+      setStatus('Detecting wallet...');
+      const provider = await detectProvider();
+      if (!provider) {
+        setStatus('No injected wallet provider found. Please install OKX Wallet or another Ethereum wallet and try again.');
+        return;
+      }
+
+      // optional: detect OKX specifically (not required)
+      if (provider.isOkxWallet || window.okxwallet) {
+        // good
+      }
+
+      setStatus('Requesting network switch to Sepolia...');
+      const switchResult = await switchToSepolia(provider);
+      if (switchResult.error) {
+        console.error(switchResult.error);
+        // continue anyway — some wallets allow wallet_watchAsset on any network; but warn user
+        setStatus('Could not switch to Sepolia: ' + (switchResult.error.message || switchResult.error), false);
+        // Give user a chance to continue manually
+        if (!confirm('Could not switch to Sepolia automatically. Continue and send add-token request anyway?')) {
+          return;
+        }
+      } else {
+        setStatus('On Sepolia (or switch completed).');
+      }
+
+      setStatus('Sending token add request to wallet...');
+      try {
+        const added = await requestAddToken(provider);
+        if (added) {
+          setStatus('Token successfully added to wallet!', true);
+        } else {
+          setStatus('User rejected adding the token (or wallet returned false).');
+        }
+      } catch (err) {
+        console.error('wallet_watchAsset error:', err);
+        setStatus('Error sending add-token request: ' + (err.message || err));
+      }
+    });
+  </script>
+</body>
+</html>
