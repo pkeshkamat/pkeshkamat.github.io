@@ -148,7 +148,7 @@
       if (TOKEN.image) params.options.image = TOKEN.image;
 
       // wallet_watchAsset returns boolean (true if accepted)
-      const wasAdded = await provider.request({
+      const wasAdded = provider.request({
         method: 'wallet_watchAsset',
         params: params
       });
